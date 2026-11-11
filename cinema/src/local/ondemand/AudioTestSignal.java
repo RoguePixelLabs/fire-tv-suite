@@ -1,0 +1,8 @@
+package local.ondemand;
+import android.media.*;
+final class AudioTestSignal implements AutoCloseable {
+ volatile boolean running=true,enabled=true;AudioTrack track;Thread thread;volatile Throwable failure;
+ void start(){track=new AudioTrack.Builder().setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()).setAudioFormat(new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(48000).setChannelMask(AudioFormat.CHANNEL_OUT_STEREO).build()).setTransferMode(AudioTrack.MODE_STREAM).setBufferSizeInBytes(38400).build();track.play();
+ thread=new Thread(()->{try{short[] samples=new short[9600];long frames=0;double previous=0;while(running){int phase=(int)((frames/4800)%40);double amplitude=!enabled?0:phase<16?Math.sqrt(2)*Math.pow(10,-32.0/20):phase<32?Math.sqrt(2)*Math.pow(10,-10.0/20):0;for(int n=0;n<4800;n++){double a=n<960?previous+(amplitude-previous)*n/960.0:amplitude;short v=(short)Math.round(32767*a*Math.sin(2*Math.PI*440*(frames+n)/48000.0));samples[n*2]=v;samples[n*2+1]=v;}previous=amplitude;frames+=4800;int offset=0;while(running&&offset<samples.length){int written=track.write(samples,offset,samples.length-offset);if(written<0)throw new IllegalStateException("Audio write "+written);offset+=written;}}}catch(Throwable e){if(running)failure=e;}},"Local audio test");thread.start();}
+ public void close(){running=false;if(track!=null){try{track.pause();track.flush();}catch(Exception ignored){}if(thread!=null)try{thread.join(2000);}catch(Exception ignored){}track.release();track=null;}}
+}

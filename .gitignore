@@ -1,0 +1,17 @@
+/build/
+/local/
+/.idea/
+*.apk
+*.apks
+*.aar
+*.jar
+*.idsig
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+.env*
+*.log
+provision.txt
+local.properties

@@ -1,0 +1,14 @@
+package local.ondemand;
+import android.content.*;import org.json.*;import java.util.*;
+/** Title-level recency and separate, reversible episode watched flags. No source URLs are stored. */
+final class WatchLibrary {
+ static SharedPreferences prefs(Context c){return c.getSharedPreferences("watch-library",0);}
+ static JSONObject title(JSONObject m,String type){JSONObject out=new JSONObject();try{for(String key:new String[]{"id","name","poster","background","releaseInfo","description"})out.put(key,m.optString(key));out.put("type",type);}catch(Exception ignored){}return out;}
+ static void started(Context c,JSONObject m,String type,String episode){if(m==null||m.optString("id").isEmpty())return;JSONObject item=title(m,type);try{item.put("updated",System.currentTimeMillis());item.put("lastEpisode",episode);prefs(c).edit().putString("title."+type+":"+m.optString("id"),item.toString()).apply();}catch(Exception ignored){}}
+ static List<JSONObject> recent(Context c){List<JSONObject> out=new ArrayList<>();for(Map.Entry<String,?> entry:prefs(c).getAll().entrySet())if(entry.getKey().startsWith("title."))try{out.add(new JSONObject(String.valueOf(entry.getValue())));}catch(Exception ignored){}Collections.sort(out,(x,y)->Long.compare(y.optLong("updated"),x.optLong("updated")));return out;}
+ static boolean watched(Context c,String id){return prefs(c).getBoolean("watched."+id,false);}
+ static void mark(Context c,String id,boolean value){prefs(c).edit().putBoolean("watched."+id,value).putLong("manual."+id,System.currentTimeMillis()).apply();}
+ static void progress(Context c,String id,long position,long length,boolean ended,long session){if(prefs(c).getLong("manual."+id,0)>=session)return;if(ended||(length>0&&position>=length*.95))prefs(c).edit().putBoolean("watched."+id,true).apply();}
+ // Old history stored individual episode IDs. Resolve the root once, preserving original recency.
+ static void migrate(Context c,Api api){SharedPreferences old=c.getSharedPreferences("history",0),p=prefs(c);TreeMap<String,Long> roots=new TreeMap<>();for(String key:old.getAll().keySet())if(key.startsWith("name.")){String id=key.substring(5);if(!id.matches("tt[0-9]+(?::[0-9]+:[0-9]+)?"))continue;String type=id.contains(":")?"series":"movie",root=id.split(":")[0],k=type+":"+root;roots.put(k,Math.max(roots.getOrDefault(k,0L),old.getLong("updated."+id,0)));}List<String> keys=new ArrayList<>(roots.keySet());Collections.sort(keys,(x,y)->Long.compare(roots.get(y),roots.get(x)));int added=0;for(String key:keys){if(Thread.currentThread().isInterrupted())return;if(p.contains("title."+key))continue;if(added++>=20)break;try{String[] parts=key.split(":");JSONObject item=title(api.meta(parts[0],parts[1]),parts[0]);if(!item.optString("id").equals(parts[1]))continue;item.put("updated",roots.get(key));p.edit().putString("title."+key,item.toString()).apply();}catch(Exception ignored){}}}
+}

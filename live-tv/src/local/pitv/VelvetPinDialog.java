@@ -1,0 +1,23 @@
+package local.pitv;
+import android.app.*;import android.os.Bundle;import android.view.*;import android.widget.*;
+/** Remote-friendly PIN pad without opening the full on-screen keyboard. */
+final class VelvetPinDialog extends Dialog {
+ final Runnable unlocked; final SecureStore store; String savedPin;String digits="";TextView display,error;Button first;final Button[] buttons=new Button[12];
+ VelvetPinDialog(Activity app,Runnable action){super(app);unlocked=action;store=new SecureStore(app);try{savedPin=store.get("velvet_pin");}catch(Exception e){savedPin="";}setTitle(savedPin==null||savedPin.isEmpty()?"Velvet · Choose a PIN":"Velvet · Enter PIN");}
+ protected void onCreate(Bundle saved){super.onCreate(saved);LinearLayout body=new LinearLayout(getContext());body.setOrientation(1);body.setLayerType(View.LAYER_TYPE_SOFTWARE,null);int pad=TvStyle.dp(getContext(),18);body.setPadding(pad,pad,pad,pad);display=TvStyle.text(getContext(),"○ ○ ○ ○",24);display.setGravity(Gravity.CENTER);body.addView(display);error=TvStyle.text(getContext(),"",13);error.setGravity(Gravity.CENTER);body.addView(error);TableLayout keys=new TableLayout(getContext());String[] labels={"1","2","3","4","5","6","7","8","9","Delete","0","Cancel"};for(int row=0;row<4;row++){TableRow line=new TableRow(getContext());for(int col=0;col<3;col++){String label=labels[row*3+col];Button key=new PinKey(getContext(),label,()->{if(label.equals("Cancel"))cancel();else if(label.equals("Delete")){if(!digits.isEmpty())digits=digits.substring(0,digits.length()-1);paint();}else enterDigit(label);});key.animate().cancel();key.setOnFocusChangeListener((view,focused)->{view.animate().cancel();view.invalidate();body.invalidate();});buttons[row*3+col]=key;line.addView(key,new TableRow.LayoutParams(TvStyle.dp(getContext(),90),TvStyle.dp(getContext(),48)));if(first==null)first=key;}keys.addView(line);}body.addView(keys);setContentView(body);getWindow().setLayout(-2,-2);first.requestFocus();}
+ static final class PinKey extends Button {
+  final android.graphics.Paint paint=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+  PinKey(android.content.Context context,String label,Runnable action){super(context);setText(label);setFocusable(true);setClickable(true);setBackground(null);setStateListAnimator(null);setOnClickListener(v->action.run());}
+  protected void onDraw(android.graphics.Canvas canvas){float density=getResources().getDisplayMetrics().density;android.graphics.RectF box=new android.graphics.RectF(2*density,2*density,getWidth()-2*density,getHeight()-2*density);paint.setStyle(android.graphics.Paint.Style.FILL);paint.setColor(hasFocus()?0xff173c4c:TvStyle.PANEL);canvas.drawRoundRect(box,8*density,8*density,paint);paint.setStyle(android.graphics.Paint.Style.STROKE);paint.setStrokeWidth(2*density);paint.setColor(hasFocus()?TvStyle.CYAN:0xff52616e);canvas.drawRoundRect(box,8*density,8*density,paint);paint.setStyle(android.graphics.Paint.Style.FILL);paint.setTextSize(16*density);paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);paint.setTextAlign(android.graphics.Paint.Align.CENTER);paint.setColor(TvStyle.INK);canvas.drawText(getText().toString(),getWidth()/2f,getHeight()/2f-(paint.ascent()+paint.descent())/2f,paint);}
+ }
+ void paint(){StringBuilder text=new StringBuilder();for(int i=0;i<4;i++)text.append(i<digits.length()?"● ":"○ ");display.setText(text.toString().trim());}
+ void enterDigit(String digit){if(digits.length()>=4)digits="";digits+=digit;error.setText("");paint();if(digits.length()==4){if(acceptPin()){digits="";dismiss();unlocked.run();}else{digits="";paint();error.setText("Incorrect PIN · Try again");}}}
+
+ boolean acceptPin(){
+  if(savedPin!=null&&!savedPin.isEmpty())return savedPin.equals(digits);
+  try{store.put("velvet_pin",digits);savedPin=digits;return true;}
+  catch(Exception e){return false;}
+ }
+ public boolean dispatchKeyEvent(KeyEvent event){int key=event.getKeyCode();if(key>=KeyEvent.KEYCODE_DPAD_UP&&key<=KeyEvent.KEYCODE_DPAD_RIGHT){if(event.getAction()==KeyEvent.ACTION_DOWN){int index=0;for(int i=0;i<buttons.length;i++)if(buttons[i]!=null&&buttons[i].hasFocus()){index=i;break;}int row=index/3,col=index%3;if(key==KeyEvent.KEYCODE_DPAD_UP)row=Math.max(0,row-1);else if(key==KeyEvent.KEYCODE_DPAD_DOWN)row=Math.min(3,row+1);else if(key==KeyEvent.KEYCODE_DPAD_LEFT)col=Math.max(0,col-1);else col=Math.min(2,col+1);if(buttons[row*3+col]!=null)buttons[row*3+col].requestFocus();}return true;}return super.dispatchKeyEvent(event);}
+ public boolean onKeyDown(int key,KeyEvent event){if(key>=KeyEvent.KEYCODE_0&&key<=KeyEvent.KEYCODE_9){if(event.getRepeatCount()==0)enterDigit(String.valueOf(key-KeyEvent.KEYCODE_0));return true;}return super.onKeyDown(key,event);}
+}

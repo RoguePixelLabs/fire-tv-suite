@@ -1,0 +1,3 @@
+package local.pitv;
+import android.app.*;import android.os.*;import android.content.*;import android.widget.*;
+public class RemoteButtonsActivity extends Activity {public void onCreate(Bundle b){super.onCreate(b);new AlertDialog.Builder(this).setTitle("Firestick Home button").setMessage("Home opens Pi TV. Volume and power retain their Fire OS behavior. Wi-Fi, Bluetooth and device settings remain available.").setPositiveButton("Device settings",(d,w)->{startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS));finish();}).setNegativeButton("Close",(d,w)->finish()).setOnCancelListener(d->finish()).show();}}

@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='utf-8'?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="local.pitv" android:versionCode="1" android:versionName="1.0">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="28" />
+  <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-feature android:name="android.software.leanback" android:required="true" />
+  <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+  <queries>
+    <package android:name="local.piyoutube" />
+    <package android:name="org.videolan.vlc" />
+    <package android:name="com.spotify.tv.android" />
+    <package android:name="ar.tvplayer.tv" />
+    <package android:name="com.explusalpha.NesEmu" />
+    <package android:name="com.explusalpha.Snes9xPlus" />
+    <package android:name="com.explusalpha.MdEmu" />
+    <package android:name="com.stremio.one" />
+    <package android:name="local.ondemand" />
+    <package android:name="com.google.android.youtube.tv" />
+    <package android:name="com.google.android.youtube" />
+  </queries>
+  <application android:label="Pi TV" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:usesCleartextTraffic="true">
+    <activity android:name=".AudioLevelSettingsActivity" android:enabled="false" android:exported="true" android:label="Volume leveling" />
+    <service android:name=".AudioLevelService" android:enabled="false" android:exported="false" android:foregroundServiceType="specialUse">
+      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Continuous user-selected post-mix audio dynamics for consistent media volume" />
+    </service>
+    <receiver android:name=".AudioLevelBootReceiver" android:enabled="false" android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+      </intent-filter>
+    </receiver>
+    <activity android:name=".ExternalPlayerActivity" android:label="Pi TV Player" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="http" />
+        <data android:scheme="https" />
+        <data android:scheme="content" />
+        <data android:mimeType="video/*" />
+        <data android:mimeType="application/x-mpegURL" />
+        <data android:mimeType="application/vnd.apple.mpegurl" />
+      </intent-filter>
+    </activity>
+    <service android:name=".MusicSessionAccess" android:label="Pi TV Music" android:exported="true" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.notification.NotificationListenerService" />
+      </intent-filter>
+    </service>
+    <activity android:name=".MusicActivity" android:exported="false" />
+    <provider android:name=".GameFilesProvider" android:authorities="local.pitv.games" android:exported="false" android:grantUriPermissions="true" />
+    <service android:name=".RemoteButtonsService" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+      </intent-filter>
+      <meta-data android:name="android.accessibilityservice" android:resource="@xml/remote_buttons" />
+    </service>
+    <activity android:name=".RemoteButtonsActivity" android:exported="false" android:launchMode="singleTop" />
+    <activity android:name=".GamesActivity" android:exported="false" />
+    <activity android:name=".IptvActivity" android:exported="false" />
+    <activity android:name=".MainActivity" android:exported="true" android:launchMode="singleTask">
+      <intent-filter android:priority="10">
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.HOME" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
